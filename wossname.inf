@@ -1,0 +1,1830 @@
+! Copyright 1999-2014 by David Fillmore
+! This work is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License. 
+! To view a copy of this license, visit http://creativecommons.org/licenses/by-nc/4.0/ or send a letter 
+! to Creative Commons, 444 Castro Street, Suite 900, Mountain View, California, 94041, USA.
+
+
+! Constants
+
+Constant Story "Spodgeville Murphy and The Jewelled Eye of Wossname";
+Constant Headline "^An Interactive Fantasy Type Parody Thing^";
+Constant Amusing_provided;
+Constant Number_Tasks 66;
+Constant Tasks_Provided;
+
+Array task_scores -> 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22
+                     23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41
+                     42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60
+                     61 62 63 64 65 66;
+Release 13;
+
+Zcharacter table + '@{2122}';
+
+! Globals
+
+Global cred;
+Global max_score = 16830;
+Global is_start;
+Global final_points;
+Global ranker;
+
+Replace Achieved;
+Replace StrongSub;
+Replace QuitSub;
+Replace RestartSub;
+Replace Objects1Sub;
+Replace Places1Sub;
+Replace NotifyTheScore;
+Replace DrawStatusLine;
+!Replace VersionSub;
+!Replace Banner;
+!Replace DoMenu;
+!Replace LowKey_Menu;
+
+Include "parser";
+Include "utility.h";
+!Include "domenu.h";
+
+Object LibraryMessages "LibraryMessages"
+  with before
+       [; Prompt: style bold;
+                  print "^>";
+                  style roman;
+                  rtrue;
+       ];
+
+Include "verblib";
+!Include "flags.h";
+!Include "banner.h";
+
+Attribute fireable;
+Attribute questionable;
+Attribute thingy;
+
+Array command string "go southeastgo eastexamine windowopen windowihit window with swordbreak window with swordscreamhit me with sword";
+
+
+
+
+Object scoreall "scoreall"
+  with points;
+  
+
+Object score1 "score1"
+  with points;
+Object score2 "score2"
+  with points;
+Object score3 "score3"
+  with points;
+Object score4 "score4"
+  with points;
+Object score5 "score5"
+  with points;
+Object score6 "score6"
+  with points;
+
+Object Murphy "Spodgeville Murphy"
+  with short_name
+       "Spodgeville Murphy",
+       description
+       [;  return L__M(##Miscellany, 19);
+       ],
+       before,   after NULL,    life NULL,    each_turn NULL,
+       time_out NULL, describe NULL,
+       capacity 100, parse_name 0,
+       orders 0, number 0,
+  has  concealed animate proper transparent;
+
+Object Pirate "pirate"
+  with description "You can't see any such thing",
+       before
+       [; "You can't see any such thing.";
+       ],
+       each_turn 
+       [; remove pirate;
+          "^There are faint rustling noises from the darkness behind you. As you turn toward them, you spot a bearded pirate. 
+           He is carrying a large chest.^^
+           ~Shiver me timbers!~ he cries, ~I've been spotted!  I'd best hie meself off to the maze to hide me chest!~^^
+           With that, he vanishes into the gloom.";
+       ]
+has concealed;
+
+Object sword "elven sword"
+has thingy;
+Object moss "moss"
+has thingy;
+Object master "Master Key"
+has thingy;
+Object ring "strange ring"
+has thingy;
+Object coat "coat"
+has thingy;
+Object unicorn "unicorn key"
+has thingy;
+Object demon "various treasures"
+has thingy;
+Object wand "wizard's wand"
+has thingy;
+Object scarf "long scarf"
+has thingy;
+Object bear "bear"
+has thingy;
+Object royal "royal treasure"
+has thingy;
+Object pirate_treasure "pirate's treasure"
+has thingy;
+Object thief "thief's treasure"
+has thingy;
+Object map "map to the Jewelled Eye of Wossname"
+has thingy;
+
+Object Bridge "left bridge"
+  with description "You shouldn't be here - BUG!"
+  has visited supporter;
+
+
+Object Cave "Shrine of The Jewelled Eye of Wossname"
+   with description
+      [; print "Something died here, recently. Its foul odour 
+                permeates this damp, gloomy cave. ";
+         if (jewel in platform)
+         print "However, such things are of no concern now, not when you're this close to your goal. ";
+         if (player notin platform)
+         { print "Directly in front of you";
+           if (jewel in platform)
+            ", on top of a small platform jutting up from a large pile of rocks on the cave floor, 
+                  is the Jewelled Eye of Wossname. The exit is back to the west.";
+         
+           else
+           " a small platform juts up from a large pile of rocks on the cave floor.";
+         }
+         else
+         print "You are standing on a small platform which juts up from a large pile of rocks on the cave floor.";
+         
+      ],
+        w_to [; if (jewel in platform) "Not without the Eye!";
+                else "You can no longer go that way.";
+             ],
+        out_to
+        [; <<Go w_obj>>;
+        ],
+   has ;
+
+Object exit "exit" Cave 
+  with description
+       [; if (jewel in platform)
+          "That's the way you came in, and probably the way you're going
+           to leave again.";
+          else
+          "Well, you're not getting out that way.";
+       ],
+       short_name
+       [; if (player in platform)
+          print "lower exit";
+          else
+          print "exit";
+          rtrue;
+       ],
+       before
+       [; if (jewel in platform)
+          { if (noun ~= umbrella)
+            "It's unlikely that ", (the) noun ," would be strong enough to
+             keep the door open, should it decide to close for any reason.";
+            else
+            "It won't stay in place.";
+          }
+          rfalse;
+       ],
+       name "lower" "exit" "doorway",
+  has scenery;
+
+Object platform "platform" Cave
+   with name "platform" "small" "pillar",
+        first_time 0,
+        description
+        [; print "It juts up about a metre from the floor.";
+           if (player in self)
+           { new_line;
+             rtrue;
+           }
+           if (child(self)~=0)
+           print "^You can see ", (a) child(self), " on it.";
+           new_line;
+           rtrue;
+        ],
+
+        moving 0,
+        inside_description
+        [; if (roof.cavein==2)
+           "From here you can just make out the exit
+            about 2 metres away, and a bit above your head. A ledge still protrudes
+            a little way from the wall by the exit.";
+           else
+           "You are very nearly bumping your head on the ceiling here.";
+        ],
+        react_before
+        [; Go: if (noun == d_obj && player in self)
+               <<exit platform>>;
+           Smell:  if (noun ~= 0)
+                   rfalse;
+                   else
+                   { print "The smell appears to be coming from ";
+                     if (corpse in location)
+                     "the dead body.";
+                     else
+                     "a pile of rocks.";
+                   }
+        ],
+        
+        before
+        [; Enter: if (child(self)==player)
+                  "You're already on it!";
+                  if (child(self)~=0)
+                  "There's already something up there.";
+                  if (umbrella has open && umbrella in player)
+                  "You attempt to clamber onto the platform, but the open
+                   umbrella puts you off balance, and you fall to the ground,
+                   painfully.";
+                  print "You clamber up onto the stone platform.^";
+                  PlayerTo(platform, 1);
+                  if (roof.cavein==2)
+                  { move ledge to location;
+                    move exit2 to location;
+                    "From here you can see what
+                     was previously the room above the one you are in. By an amazing stroke
+                     of luck, it's also the room you first entered when you entered this
+                     wretched cave, two days ago. Unfortunately, the exit is out of
+                     your reach.";
+
+                  }
+                  else
+                  { new_line;
+                    rtrue;
+                  }
+           Exit:  remove ledge;
+                  PlayerTo(cave);
+                  "You clamber down from the platform.";
+           Receive: if (child(self)~=0)
+                    "There's already something on it.";
+                    if (noun == jewel)
+                    "No, you need to keep the Eye.";
+           Climb: <<Enter self>>;
+           Search: <<Examine self>>;
+        ],
+        daemon
+        [; walls.moving = 1;
+           self.moving++;
+           switch(self.moving)
+           { 3: "^You hear a sudden creaking noise, and the platform shifts again. That
+                 can't be good.^";
+             4: "^The walls of the cave seem to be closing in on you. It's times like
+                 this when you really question whether Adventuring is a good line
+                 of work for a claustrophobic.^";
+             6: "^With a start you realise that the walls really are closing in on you.";
+             8: "^The walls really are getting kind of close. If you're going to get out of
+                 here, I'd make it quick.^";
+             10: deadflag=1;
+                "^The walls crush you, the platform, and everything else, and
+                 Spodgeville Murphy is no more.";
+           }
+        ],
+   has scenery enterable supporter;
+
+Object Jewel "Jewelled Eye of Wossname" platform
+   with description
+        "The legendary Jewelled Eye of Wossname. Entire kingdoms have been
+         wiped out in great battles for this, so it was stored safely
+         away where none but the most pig-headed and greedy adventurers
+         would look for it. That'd be you, then.^
+         It really does look like an eye. In fact, it seems to be staring
+         at you.",
+         article "The",
+        name "jewel" "wossname" "eye" "jewelled" "jeweled",  
+        each_turn
+        [; move platform to cave;
+           if (self in platform)
+           give self scenery;
+           else
+           give self ~scenery;
+        ],
+        before
+        [; Take: achieved(62);
+                 if (jewel in platform)
+                 { StartDaemon(platform);
+                   
+                   move jewel to player;
+                   "As you lift the Jewelled Eye of Wossname from its resting-place, the platform
+                    shifts slightly, and the exit slams shut. A few small bits of rock fall
+                    from the ceiling.
+                    Now how are you going to get out of here?";
+                 }
+           WhipIt: if (whip notin player)
+                   "You haven't got the whip.";
+                   if (self in platform)
+                 { StartDaemon(platform);
+                   move jewel to location;
+                   "You crack the whip at the Eye, knocking it onto the floor.
+                    You just have time to notice the platform it was on shift slightly
+                    before you hear the exit slam shut. Now how are you going
+                    to get out of here?";
+                 }  
+           Drop: "You need to keep the Eye with you.";
+
+        ],
+    has scenery;
+
+
+
+Object rocks "rocks" Cave
+  with name "rocks" "debris" "stones" "detritus" "rock" "pile" "piles",
+       description
+       [; if (roof in location)
+          "Odd bits of rock lie scattered around the room, piled
+           high in some areas, while completely absent in others.
+           You're not quite sure where they came from.";
+          else
+          "Huge rocks cover the entire cave floor.";
+       ],
+
+       searched 0,
+       each_turn
+       [; move platform to cave;
+       ],
+       before
+       [; Search, Push, Pull: if (self.searched==0)
+                  { self.searched++;
+                    achieved(63);
+                    move corpse to location;
+                    SetPronoun('it', corpse);
+                    SetPronoun('him', corpse);
+                    "Sifting through the piles of debris, you come across a body that
+                     must have died some weeks ago.";
+                  }
+                  else
+                  "You don't find anything interesting.";
+
+         Kick: "You injure your foot.";
+         Count: if (roof in location)
+                "There are 69,105 rocks here.";
+                else
+                "There are more than 69,105 rocks here.";
+         Receive: if (self.searched==0)
+                  { self.searched++;
+                    achieved(63);
+                    move corpse to location;
+                    SetPronoun('it', corpse);
+                    SetPronoun('him', corpse);
+                    "You move some rocks aside, so that you can place ",
+                     (the) noun , " but discover instead that there's already
+                     something there. A dead body lies under the debris.";
+                  }
+                  "Not a good idea.";
+
+                    
+                    
+       ],
+  has scenery pluralname;
+
+Object exit2 "exit2"
+  with description
+       "That's the entrance to The Cave of The Shrine of The Jewelled Eye of Wossname.",
+       short_name
+       [; if (player in platform)
+          print "upper exit";
+          else
+          print "exit";
+          rtrue;
+       ],
+       name "upper" "exit",
+         
+  has scenery;
+
+
+Object ledge "ledge"
+  with name "ledge",
+       description "The ledge protrudes a little way from the wall in which is the exit
+       from the cave. You notice the little root sticking half out of it that
+       you tripped over on your way in.",
+       add_to_scope root,
+       before
+       [; WhipIt: if (whip notin player)
+                  "You haven't got the whip.";
+                  "You crack the whip at the ledge, but it doesn't
+                   catch anything. Maybe if you were more specific...";
+       ],
+  has scenery;
+
+Object root "root"
+  with name "root",
+       description "You can't see it properly from here.",
+       before
+       [; Whipit: if (whip notin player)
+                  "You haven't got the whip.";
+                  final_points=1;
+                  achieved(66);
+                  NotifyTheScore();
+                  deadflag=2;
+                  "^The whip ties itself around the root in an amazingly unlikely way,
+                   allowing you to climb up it to safety. You quickly take the Eye to
+                   Z'Hbfm, and get paid. There was also something about the Queen, and
+                   civil war, or a lack of civil war, or something, but the main thing
+                   is you got paid.^
+                   Hurrah!";
+       ],
+       has scenery;
+
+
+Object walls "cave walls" cave
+  with name "wall" "walls",
+       description 
+       [; if (self.moving == 0 || platform.moving <5)
+          "You see nothing special about the walls.";
+          if (self.moving == 1)
+          "They are slowly moving inwards. If you don't move soon, they'll
+           crush you alive!";
+          if (self.moving == 2)
+          "The debris from the ceiling has stopped them in their tracks.";
+          if (self.moving == 3)
+          "They seem to have stopped.";
+      ],
+      before
+      [; Count: "Strangely enough, there are exactly 8 walls.";
+      ],
+
+                 
+      moving 0,
+  has scenery;
+
+
+Object gun "gun"
+   with description
+        [; print "It's a small pistol. You've used";
+           if (self.bullets ~= 0)
+           " most of the bullets already.";
+           else
+           " all of the bullets already.";
+        ],
+
+        name "gun" "pistol" "small",
+        bullets 2,
+        before
+        [; Open:
+           print "Opening the gun reveals that ";
+           switch(self.bullets)
+           { 0: "it is empty.";
+             1: "only one bullet remains.";
+             2: "it has two bullets left.";
+             3: "a bug has occured, and the gun miraculously has more
+                 bullets than when you started the game.";
+           }
+           Search: <<open self>>;
+        ],
+        add_to_scope gun_bullets,
+   has fireable;
+
+Object gun_bullets "gun_bullets"
+  with name "bullets",
+       description
+       [; <<open gun>>;
+       ],
+       before
+       [; if (action_to_be == ##Examine)
+          rfalse;
+          if (action_to_be == ##Count)
+          <<open gun>>;
+          "You can't see any such thing.";
+       ],
+  has scenery;
+
+Object hat "hat"
+  with name "hat" "battered" "smelly" "old",
+       description "It's getting a bit old now, it's kind of battered
+                    and even a bit smelly, but it's your trademark hat,
+                    and Spodgeville Murphy doesn't go anywhere without
+                    his trademark hat.",
+       before
+       [; Disrobe: "Spodgeville Murphy without his hat? What if one of your fans saw you?
+                    It doesn't bear thinking about.";
+       ],
+       each_turn
+       [; if (location == thedark)
+          move grue1 to location;
+       ],
+       add_to_scope stubble,
+  has clothing;
+
+Object jacket "leather jacket"
+  with name "jacket" "leather",
+       description "Just your average adventurer's brown leather
+                    jacket.",
+       before
+       [; Disrobe: "But it's cold and damp and chilly in here!";
+       ],
+  has clothing;
+
+Object stubble "stubble"
+  with name "stubble",
+       description "Despite the fact that you haven't shaved
+                    for nearly 2 weeks, you just have enough
+                    stubble to look really cool.",
+       !each_turn
+       ![; if (location == thedark)
+       !   move grue1 to location;
+       !   else
+       !   remove grue1;
+       !],
+
+  has scenery;
+
+Object lamp "lamp"
+    with name "lamp" "lantern" "battery-powered" "light",
+         before
+         [; SwitchOn: if (lamp hasnt switchable)
+                      "I'm afraid not. You broke it, remember?";
+                      if (lamp has on) "It's already on.";
+                      give lamp on;
+                      remove grue1;
+                      grue1.number = 0;
+                      give lamp light;
+                      "You switch the lamp on.";
+            SwitchOff: if (lamp hasnt on) "It's already off.";
+                      give lamp ~on;
+                      move grue1 to location;
+                      give lamp ~light;
+                      "You switch the lamp off.";
+            Burn: <<SwitchOn self>>;
+         ],
+
+                      
+    has light switchable on;
+
+Object whip "whip"
+   with name "whip" "bullwhip",
+        description "It's your trusty bullwhip. It can do amazingly
+                     unlikely things.";
+
+Object manual "whip user's manual"
+  with name "manual" "leaflet",
+       description "It's little more than a pamphlet, really,
+                    and all it says is 'To use your brand new whip, just
+                    ~Whip <object>~ where ~<object>~
+                    is the name of the object you wish
+                    to whip.'",
+       before [; Open: <<Examine self>>;];
+
+
+
+Object corpse "corpse"
+  with name "corpse" "dead" "body",
+       initial
+       [; print "A dead body lies on the floor, half covered with rocks.";
+          if (self has general && umbrella in self)
+          " Clutched in its skeletal hand is an umbrella.";
+          new_line;
+          rtrue;
+       ],
+       description
+       [; print "It seems someone else almost beat you to the Eye. Luckily
+           (for you, not the poor guy on the floor) he seems to have
+           been killed by part of the roof falling in.";
+          give self general;
+          if (umbrella in self) print " Clutched in his hand is
+          an umbrella.";
+          new_line;
+          rtrue;
+       ],
+       before
+       [; Take: "But it's all smelly!";
+          Smell: "You can smell it just fine from here. And it doesn't
+                  smell too good.";
+          Search: <<Examine self>>;
+          Kiss: "No.";
+          WakeOther: "I think he's a bit beyond that.";
+          Taste: "No.";
+          Listen: "Oh no! He's not breathing! Quick, try mouth to... Never mind.";
+       ],
+       !each_turn
+       ![; SetPronoun('him', corpse);
+       !],
+
+  has transparent animate neuter;
+
+Object umbrella "umbrella" corpse
+   with name "umbrella" "invulnerable" "magic" "phrob^s" "brolly",
+        description
+        [; print "A completely ordinary looking umbrella. There's
+                  some writing on the handle, and the umbrella is ";
+           if (umbrella has open) "open.";
+           else "closed.";
+        ],
+        invent
+        [; print "an umbrella (which is ";
+           if (self has open)
+           print "open)";
+           else
+           print "closed)";
+           rtrue;
+        ],
+        stoodunder 0,
+        before
+        [; Take: if (self in corpse)
+                 { achieved(64);
+                   move self to player;
+                   "Prying open the corpse's stiff fingers, you steal its
+                    only possession. The umbrella is now yours.";
+                 }
+                 else
+                 rfalse;
+           Remove: <<Take self>>;
+           StandUnder: if (umbrella notin player)
+                       "You don't have the umbrella.";
+                       if (umbrella hasnt open)
+                       "It's not open.";
+                       if (self.stoodunder==1)
+                       "You're already under it.";
+                       self.stoodunder++;
+                       "You stand under the umbrella.";
+           Open: if (umbrella notin player)
+                 "You don't have the umbrella.";
+                 if (umbrella has open)
+                 "It's already open.";
+                 give self open;
+                 "You fight with the umbrella for a moment before it
+                  finally shoots open, catching your finger.";
+           Close: if (umbrella notin player)
+                  "You don't have the umbrella.";
+                  if (umbrella hasnt open)
+                  "It's not open.";
+                  self.stoodunder=0;
+                  give self ~open;
+                  "You struggle with the umbrella for a moment before it closes.";
+           Read: <<examine handle>>;
+        ],
+       add_to_scope handle,
+   has openable ~open;
+
+Object handle "umbrella handle"
+  with name "handle" "writing",
+       description "Invulnerable Umbrella@{2122} - Another helpful item from Phrob's
+                    Magic Company.^
+                    To use your new umbrella, simply open it, and stand underneath.",
+       
+
+  has concealed;
+       
+
+
+Object grue1 "evil" thedark
+   with  article "the",
+        name "grue" "lurking",
+        description
+        "You can't see any such thing.",
+        before
+        [; if (action_to_be==##Query) rfalse;
+           "You can't see any such thing.";
+        ],
+        what_is "The grue is a mythical beast that supposedly entered this world centuries
+                 ago from another plane of existence. Their favourite diet was,
+                 allegedly, adventurers, but their insatiable appetite was
+                 tempered by their fear of light. Load of nonsense.",
+        each_turn
+        [; self.number++;
+           if (self.number == 2)
+           { deadflag = 1;
+             "Oh, no! Something has come up from behind you and feasted on your person!";
+           }
+
+
+        ],
+
+        number 0,
+has scenery questionable;
+
+[ Achieved num x;
+  if (task_done->num==0)
+  { task_done->num=1;
+    switch(random(10))
+    { 1: ranker = "Amazing Adventurer.";
+      2: ranker = "Expert Adventurer.";
+      3: ranker = "Superb Adventurer.";
+      4: ranker = "Famous Adventurer.";
+      5: ranker = "Adventurer Extraordinaire.";
+      6: ranker = "Brilliant Adventurer.";
+      7: ranker = "Awesome Adventurer.";
+      8: ranker = "Stupendous Adventurer.";
+      9: ranker = "Really Rather Good Adventurer.";
+      10: ranker = "A Lot Better Than Average Adventurer.";
+     }
+     switch(num)
+     { 62: task_scores->num = score1.points;
+       63: task_scores->num = score2.points;
+       64: task_scores->num = score3.points;
+       65: task_scores->num = score4.points;
+       66: task_scores->num = score5.points;
+     }
+     if (num<61)
+     { x = (random((max_score-points)/number_tasks));
+       task_scores->num = x; ! (random((max_score-points)/number_tasks));
+       if (task_scores->num == 0)
+         task_scores->num = task_scores->num + 1;
+     }
+      score = score + task_scores->num;
+  }
+];
+
+
+[ DrawStatusLine zork_far width posa posb fake_turns;
+   
+   @split_window 1; @set_window 1; @set_cursor 1 1;
+   if (is_start==1)
+   { @set_window 0;
+     rtrue;
+   }
+   style reverse;
+   width = 0->33; posa = width-26; posb = width-13;
+   spaces width;
+   @set_cursor 1 2;
+   if (zork_far ~= 0)
+   { !@erase_window 1;
+     switch(zork_far)
+     { 1: print " West of House";
+       2: print " South of House";
+       3 to 20: print " Behind House";
+     }
+     fake_turns=zork_far-1;
+     if (width > 76)
+     {   @set_cursor 1 posa; print (string) SCORE__TX; print 0;
+         @set_cursor 1 posb; print (string) MOVES__TX; print fake_turns;
+     }
+     if (width > 63 && width <= 76)
+     {   @set_cursor 1 posb; print 0, "/", fake_turns;
+     }
+     @set_cursor 1 1; style roman; @set_window 0;
+     rfalse;
+
+   }
+   if (location == thedark) print (name) location;
+   else
+   {   FindVisibilityLevels();
+       if (visibility_ceiling == location)
+       print (name) location;
+       else print (The) visibility_ceiling;
+   }
+   if ((0->1)&2 == 0)
+   {   if (width > 76)
+       {   @set_cursor 1 posa; print (string) SCORE__TX, sline1;
+           @set_cursor 1 posb; print (string) MOVES__TX, sline2;
+       }
+       if (width > 63 && width <= 76)
+       {   @set_cursor 1 posb; print sline1, "/", sline2;
+       }
+   }
+   else
+   {   @set_cursor 1 posa;
+       print (string) TIME__TX;
+       LanguageTimeOfDay(sline1, sline2);
+   }
+   @set_cursor 1 1; style roman; @set_window 0;
+];
+
+[ Places1Sub;
+  "You have visited: Far Too Many Places Too Remember, Shrine of The Jewelled Eye of Wossname.";
+];
+[ Objects1Sub i j f g;
+  objectloop(g has thingy)
+  { give g moved;
+    move g to player;
+    move g to bridge;
+    if (g == moss) remove g;
+    if (g == coat) remove g;
+    if (g == demon) remove g;
+    if (g == bear) remove g;
+    if (g == map) remove g;
+  }
+  L__M(##Objects,1);
+  objectloop(i has moved)
+  {   f=1; print (the) i; j=parent(i);
+
+      if (j)
+      {   if (j==player)
+          {   if (i has worn) L__M(##Objects, 3);
+              else L__M(##Objects, 4);
+              jump obj__ptd;
+          }
+          if (j has supporter) { L__M(##Objects, 9, j); jump obj__ptd; }
+          if (j has animate)   { L__M(##Objects, 5); jump obj__ptd; }
+          if (j has visited)   { L__M(##Objects, 6, j); jump obj__ptd; }
+          if (j has container) { L__M(##Objects, 8, j); jump obj__ptd; }
+          
+          if (j has enterable) { L__M(##Objects, 7, j); jump obj__ptd; }
+      }
+
+      L__M(##Objects, 10);
+      .obj__ptd; new_line;
+  }
+  if (f==0) L__M(##Objects,2);
+];
+
+
+[ NotifyTheScore i;
+  style bold;
+  print "^[Your score has just gone ";
+  if (last_score > score)
+  { i=last_score-score;
+
+    @sound_effect 2; 
+    print "down";
+  }
+  else
+  { i=score-last_score;
+    @sound_effect 1; 
+    print "up";
+  }
+  print " by "; EnglishNumber(i); print " point";
+  if (i>1) print "s"; print ".]^";
+  style roman;
+];
+
+[ StrongSub;
+  "What if your adoring fans heard you? It doesn't bear thinking
+   about.";
+];
+
+[ QuitSub;
+  @sound_effect 2; !bing.
+  L__M(##Score);
+  PrintRank();
+  L__M(##Quit,2); if (YesOrNo()~=0) quit;
+];
+
+[ RestartSub;
+  @sound_effect 2; !bing.
+  L__M(##Score);
+  PrintRank();
+  L__M(##Restart,1);
+  if (YesOrNo()~=0)
+  { @restart;
+    L__M(##Restart,2);
+  }
+];
+
+
+CompassDirection ground "cave" compass
+  with description
+       [; <<look>>;
+       ],
+       name "cave" "ground" "floor" "d//" "down",
+       door_dir d_to,
+       before
+       [; Search: "The smell appears to be coming from a pile
+                   of rocks.";
+          Smell: <<Search self>>;
+       ],
+  has scenery static;
+
+
+   
+
+
+CompassDirection roof "ceiling" compass
+  with description "It doesn't appear very stable. The slightest noise would probably bring
+                    it down on your head.",
+       name "ceiling" "u//" "up" "roof",
+       door_dir u_to,
+       cavein 0,
+       daemon
+       [;if (self.cavein==1)
+         { self.cavein++;
+           walls.moving=2;
+           print "A small piece of stone falls from the ceiling and bounces off";
+           if (umbrella.stoodunder==1) print " the umbrella.";
+           else print " your head.";
+           print " Then the entire ceiling collapses on top of you";
+           if (umbrella.stoodunder==1)
+           { achieved(65);
+             stopdaemon(platform);
+             print ". Luckily, the Invulnerable Umbrella@{2122} lives up to its name, protecting you
+                    from the lethal detritus. From somewhere above you a dim light
+                    fills the room.^
+                    It appears that the cave ceiling now covering the cave floor
+                    has stopped the walls from moving inwards.^";
+             if (player in platform)
+             { move ledge to location;
+               "From here you can see what
+                was previously the room above the one you are in. By an amazing stroke
+                of luck, it's also the room you first entered when you entered this
+                wretched cave, two days ago. Unfortunately, the exit is out of
+                your reach. ";
+              }
+              remove roof;
+              move u_obj to compass;
+              rtrue;
+           }
+           else
+           { deadflag=1;
+             ", squashing you to a pulp.";
+           }
+         }
+         
+         
+       ],
+       before
+       [; Kick: "And just how do you propose to get your leg that high?";
+          Attack: if (player in platform && roof in compass)
+                  "You jump up and hit the ceiling, bruising your fist,
+                   and land with amazing precision back on the platform.";
+                  if (player in platform)
+                  "You jump up to hit the ceiling, but it's too far away.
+                   You land back on the platform with amazing precision.";
+                  "You begin jumping up and down, flailing at the ceiling,
+                   but you can't reach it.";
+       ],
+                  
+    has scenery;
+
+[ TitlePage i;
+  @erase_window -1; print "^^^^^^^^^^^^^";
+  i = 0->33; if (i==0) i=80; i=(i-50)/2;
+  style bold;
+  Center("Spodgeville Murphy and The Jewelled Eye of Wossname^");
+  box ""
+      "It is an old coat."
+      ""
+      "-- William Shakespeare, ~The Merry Wives of Windsor~ I. i. 18";
+  @read_char 1 0 0 i;
+  @erase_window -1;
+];
+
+
+[ Initialise a i average_score score_left;
+  !SetFlag(AboutFlag, 1);
+  if (standard_interpreter > 0)
+  { @piracy ?oik;
+    move pirate to cave;
+  }
+  .oik; 
+             
+       
+
+  new_line;
+  ChangePlayer(Murphy);
+  player.short_name = "Spodgeville Murphy";
+  remove u_obj;
+  remove d_obj;
+  thedark.description = "It is dark and there is something gruesome
+                         in the darkness.";
+  
+  for (a=0 : a<=61 : a++)
+  { achieved(a);
+    turns=turns+random(30);
+  }
+  average_score = score/61;
+  score_left = average_score * 5;
+  scoreall.points = score_left;
+  max_score = score+scoreall.points;
+  while (scoreall.points ~= 0)
+  { scoreall.points --;
+    switch(random(7))
+    { 1: score1.points++;
+      2: score2.points++;
+      3: score3.points++;
+      4: score4.points++;
+      5: score5.points++;
+      6: score1.points++;
+      7: score5.points++;
+    }
+  }
+  StartDaemon(roof);
+ 
+  move gun to player;
+  move whip to player;
+  move manual to player;
+  move hat to player;
+  give hat worn;
+  move jacket to player;
+  give jacket worn;
+  move lamp to player;
+  location = Cave;
+  player.description = "Trademark hat, leather jacket, and just a hint of
+                        stubble. You look pretty good for a generic
+                        stereotypical adventurer parody.";
+  @erase_window -1;
+  is_start=1;
+  print "^Do you wish to read the (ridiculously long) introduction?^(Y/N)";
+
+  style bold;
+  print "^>";
+  style roman;
+  if (YesOrNo() == 0)
+  jump awooga;
+  @erase_window -1;
+  print "^^~Our doom is sealed.~^  The old woman turned away from the window
+  overlooking the vast ocean. ~Queen Fafhara has become ill; at first it was
+  just a cold, but the fever rose and she became delirious; now she has fallen
+  into a coma.^  The King spends all his time watching over his young wife.
+  State business is being neglected. The barons have seen their chance to
+  power; only their mutual distrust keeps them from open revolt, but civil
+  war is approaching.  And the Queen's health keeps deteriorating.~^  The
+  silence was unbroken for a long minute. Then a tiny voice near the door
+  peeped, ~Then there is no hope?~^  ~";
+  style underline;
+  print "No";
+  style roman;
+  print ". Oh, wait, hold on. I just thought of something.~ The old woman
+  leaned forward on her staff. ~The Queen is very ill; no one in this room
+  can hope to cure her. But she need not die -- if we act at once we may be
+  able to save her.~^  ~Wherein lies your hope, Z'Hbfm?~ demanded a man in the
+  front row.^  ~What Magick is proof against the death of the Queen
+  herself?~^  Z'Hbfm's dry chuckle stilled the murmur of the crowd. ~You forget
+  your own history, Gunther. Are you not author of the definitive scroll on the
+  Jewelled Eye of Wossname?~^  A tumult of protests drowned out Gunther's
+  retort. Z'Hbfm hobbled over to a table laden with mystical artifacts,
+  selected a small stone and raised it high.^  ~The Eye is our only hope,~ she
+  cried, shaking the stone as it failed to glow. ~It is said that the possessor
+  of the Jewelled Eye will gain an insight into all worldly knowledge.
+  The possessor merely has to think of a problem and the solution will become
+  readily apparent. With this power one could easily heal the Queen, and return
+  peace to the land.~^  A shrill voice rose above the cheering. ~And who will
+  steal this Eye from its hiding place?~ it scoffed. ~You, Z'Hbfm?~^  Z'Hbfm
+  placed the stone back on the table, annoyed with its inability to glow at a
+  suitably dramatic moment.^  ~Not I,~ she replied, knocking the lifeless stone
+  onto the floor in frustration.
+  ~The Eye is a powerful object. We dare not send anyone who knows of its
+  power. Another champion must be sought; an idiot unskilled in anything but
+  adventuring, who cannot know the price of failure, or recognize the face of
+  death.~^  ~Suppose your champion succeeds in this hopeless quest. What will
+  become of the Eye?~^  Z'Hbfm turned to face the sea once more. ~How should I
+  know? I can't think of everything. Sometimes you lot really get on my
+  nerves.~^  Gunther paused, slightly embarrassed. ~And who shall we send on
+  this deadly mission?~^  Z'Hbfm smiled to herself, and turned around. ~I can
+  think of no one better qualified than that arrogant fool, Spodgeville
+  Murphy.~^  There was a general agreement; you were Sent.^^";
+  do { @read_char 1 0 0 i; } until (i~=0);
+  is_start=0;
+  TitlePage();
+  @erase_window -1;
+  
+  "^^^^Five months later (after looking in the wrong place twice) you stumbled
+  upon the Shrine of The Jewelled Eye of Wossname. All you have to do now is 
+  get the Eye, and get back home.^";
+  .awooga;
+  is_start=0;
+  TitlePage();
+  @erase_window -1;
+  "^^^^";
+
+];
+
+[ XyzzySub;
+  if (verb_word =='xyzzy')
+  "A hollow voice refuses to say ~Fool~.";
+  if (verb_word =='plugh')
+  "A hollow voice resists the urge to say ~Cretin~.";
+  if (verb_word =='plover')
+  "A hollow voice says ~You'll try anything, won't you?~.";
+  "Oh come on. That never works.";
+];
+
+[ Pause;
+  rtrue;
+];
+
+[ ZorkSub zork_far n x print_this_turn i;
+  print "Suddenly, and without warning, you have a vision of another realm...^^";
+  !i = 1;
+  !if (standard_interpreter > 0) i = 0;
+  if (i == 0) @read_char 1 10 Pause i;
+  print  "West of House^
+         You are standing in an open field west of a white house, with a boarded front door.^
+         There is a small mailbox here.^";
+  !print_this_turn++;
+  n++;
+  zork_far =0;
+  print_this_turn = 13;
+  while (zork_far < 9)
+  { if (n == print_this_turn)
+    zork_far++;
+    x = random(3) + 1;
+    if (i == 0) @read_char 1 x Pause i;
+    switch(zork_far)
+    { 1: print_this_turn = print_this_turn+7;
+         print "^South of House^
+                You are facing the south side of a white house. There is no door here, and all the windows are boarded.^";
+      2: print_this_turn = print_this_turn+14;
+         print "^Behind House^
+                 You are behind the white house. A path leads into the forest to the east. In one corner of the house there is a small window which is slightly ajar.^";
+      3: print_this_turn = print_this_turn+11;
+         print "^The window is slightly ajar, but not enough to allow entry.^";
+      4: print_this_turn = print_this_turn+1;
+         print "^The window refuses to budge.^";
+      5: print_this_turn = print_this_turn+21;
+         print "^You are carrying:^ A sword^";
+      6: print_this_turn = print_this_turn+23;
+         print "^I've known strange people, but fighting a kitchen window?^";
+      7: print_this_turn = print_this_turn+6;
+         print "^Nice try.^";
+      8: print_this_turn = print_this_turn+17;
+         print "^Aaaarrrrgggghhhh!^";
+      9: print "^If you insist.... Poof, you're dead!^^    ****  You have died  ****^^";
+         if (i == 0) @read_char 1 10 Pause i;
+
+         print "And then the vision ends, as suddenly as it began,
+                and you find yourself back in a damp, dark, smelly
+                cave. How unseemly!^";
+    }
+    drawstatusline(zork_far+1);
+    if (zork_far ~=9) 
+    { print "^>";
+      if (i == 0) @read_char 1 7 Pause i;
+    }
+    while (n < print_this_turn)
+    { x = random(3) + 1;
+      if (i == 0) @read_char 1 x Pause i;
+      print (char) command->n;
+!      if (i == 0) @sound_effect 2;
+      n++;
+      
+      
+    }
+      
+  
+  }
+  <look>;
+];
+
+[ StandUnderSub;
+  "You can't stand under that!";
+];
+
+[ ShootAtSub;
+  <<ShootAtWith noun gun>>;
+];
+
+
+[ ShootWithAtSub;
+  <<ShootAtWith second noun>>;
+];
+
+[ ShootAtWithSub;
+  if (second == 0)
+  print "(with the gun)^";
+  second = gun;
+  if (second notin player)
+  "You don't have ", (the) second,"!";
+  if (second ~= gun)
+  "You can't shoot things with ", (a) second, "!";
+  if (gun.bullets==0)
+  "The gun has no bullets left.";
+  if (jewel in platform && noun ~= player)
+  "What if you were attacked by an Enchanted Wobblefiend? Best
+   to save the remaining bullets for an emergency.";
+  gun.bullets--;
+  switch(noun)
+  { Jewel: print "Strangely, the bullet bounces off the Eye without
+                  harming it in any way. What kind of power does the
+                  Eye possess?^";
+    Umbrella: print "The bullet ricochets off the umbrella and imbeds
+                     itself in the ground.^";
+    Platform: print "The bullet imbeds itself in the platform.^";
+    Rocks: print "The bullet flies into a pile of rocks and disappears.^";
+    Hat: gun.bullets++;
+         "Shoot your own hat? Not likely.";
+    Gun: gun.bullets++;
+         "Takes a better shot than you to shoot a gun at itself.";
+    Walls: print "You pick a wall a random, and fire a bullet at it.^";
+    Exit: print "You fire a shot at the exit, but miss completely.^";
+    Lamp: print "You shoot the lamp, turning it off forever.^";
+          give lamp ~light;
+          give lamp ~switchable;
+  }
+  if (noun ~= jewel or umbrella or platform or rocks or hat or walls or exit or lamp)
+  { print "You shoot ", (the) noun, " with ", (the) second;
+    if (noun == player)
+    { deadflag=1;
+      ", killing yourself instantly.";
+    }
+    else
+    print ".^";
+  }
+
+  if (roof.cavein==0)
+  { roof.cavein++;
+    give cave light;
+  }
+];
+[ WhipItSub;
+  if (whip notin player)
+  "You haven't got the whip.";
+  if (noun == whip)
+  "Whip the whip? How, precisely?";
+  if (noun in player)
+  "Although very good with your whip, you still haven't mastered the art of
+   hitting items presently in your inventory, as evidenced by the rather
+   nasty mark you just left on your arm.";
+  if (noun == player)
+  "It's not a toy. Of any kind.";
+  "You crack the whip at ", (the) noun, ". Nothing obvious happens.";
+];
+
+[ Amusing;
+  HelpSub();
+];
+
+
+[ QuerySub; PrintOrRun(noun, what_is);
+];
+
+
+[ Topic i;
+  switch(scope_stage)
+  {   1: rfalse;
+      2: objectloop (i has questionable) PlaceInScope(i); rtrue;
+      3: "Sadly, you are but a generic stereotypical adventurer parody,
+          and such things are beyond you.";
+  }
+];
+
+[ GiveHint hint keypress;
+   print (string) hint; new_line; new_line;
+   @read_char 1 0 0 keypress;
+   if (keypress == 'C' or 'c') rfalse;
+   rtrue;
+];
+
+[ HelpSub;
+  if (deadflag~=2)
+  DoMenu("There is relatively interesting information provided on the following:^
+              ^     About Spodgeville Murphy and The Jewelled Eye of Wossname
+              ^     Adverts
+              ^     Legal Stuff
+              ^     Reporting Bugs
+              ^     Credits^",
+              HelpMenu, HelpInfo);
+  else
+  DoMenu("There is relatively interesting information provided on the following:^
+              ^     About Spodgeville Murphy and The Jewelled Eye of Wossname
+              ^     Adverts
+              ^     Legal Stuff
+              ^     Reporting Bugs
+              ^     Credits
+              ^     Have you tried...^",
+              HelpMenu, HelpInfo);
+
+];
+
+[ HelpMenu;
+  if (menu_item==0)  { item_width=6; item_name="Help & Stuff";
+                       if (deadflag==2) return 6; return 5;
+                     }
+  if (menu_item==1)  { item_width=29; item_name="About Spodgeville Murphy and The Jewelled Eye of Wossname"; }
+  if (menu_item==2)  { item_width=3;  item_name="Adverts";         }
+  if (menu_item==3)  { item_width=6;  item_name="Legal Stuff";     }
+  if (menu_item==4)  { item_width=7;  item_name="Reporting Bugs";  }
+  if (menu_item==5)  { item_width=3;  item_name="Credits";         }
+  if (menu_item==6)  { item_width=8;  item_name="Have you tried?"; }
+];
+
+[ HelpInfo;
+  if (menu_item==1)
+  { print "The idea for this game came to me one night after trying to convert
+           Perilous Magic to Glulx. It may have been affected somewhat by
+           various games, books, movies, and strange, intangible objects,
+           including (but not limited to) Zork, Indiana Jones, and ";
+    style bold;
+    print "My Own Twisted Imagination";
+    style roman;
+    font on;
+    "@{2122}.^Also, the Fifth Annual IF Contest, which meant that I had to code the
+    first release very quickly, as it was very nearly contest time when I thought of
+     it.^^
+     This release (Release 10) is the fifth public release of Spodgeville
+     Murphy and The Jewelled Eye of Wossname, following on from Release 5,
+     Release 7, Release 9 and Release 10. I number them in this way merely to confuse
+     people. The main difference between this release and the previous one
+     is the lack of huge annoying error messages in the credits on some
+     interpreters.  The word 'remanin' is still nowhere to be found.^
+     Hopefully this will be the last release of this game, but I will
+     gladly accept any bug reports, or suggestions for improvement. I
+     will also gladly accept any money you feel you would like to part
+     with, though this seems to happen a lot less often.";
+  }
+  if (menu_item==2)
+  { "Three small advertisements:^^
+     This game was created using^
+     INFORM^
+     A programming language created by Graham Nelson, designed mainly for
+     making Interactive Fiction.^  
+     Inform can be found at the Interactive Fiction archive:^
+     ftp://ftp.gmd.de/if-archive/^
+     Many other (and possibly better) works of IF can also be found there.^^
+     If you liked this game, why not play^
+     PERILOUS MAGIC^
+     A captivating simulation, based around the life of a Quendorian
+     civil servant during the 8th century GUE.^^";
+  }
+  if (menu_item==3)
+  { Banner();
+    "^All trademarks remain trademarks of the people whose trademarks
+      they are. Thank you.";
+   }
+ if (menu_item==4)
+  { print "If you notice anything that appears to be a bug, have any ideas on
+           how I can improve this game, or just want to mention how brilliant the
+           game is, and how much of a genius I am, please email me at
+           marvin@@64frobnitz.co.uk.";
+    rtrue;
+  }   
+     
+  if (menu_item==5)
+  { creditssub(1);
+    @erase_window -1;
+    return 2;
+  }
+  if (menu_item==6)
+  { print "(Press ENTER to return to menu, or C to continue.)^^";
+    print "Have you tried...^^";
+    if (GiveHint("(1/10)  shooting various things?")==1)
+    return 2;
+    if (GiveHint("(2/10)  counting the rocks?")==1)
+    return 2;
+    if (GiveHint("(3/10)  looking at the FULL SCORE?")==1)
+    return 2;
+    if (GiveHint("(4/10)  reading the credits?")==1)
+    return 2;
+    if (GiveHint("(5/10)  finding the pirate?")==1)
+    return 2;
+    if (GiveHint("(6/10)  seeing another realm?")==1)
+    return 2;
+    if (GiveHint("(7/10)  saying magic words such as xyzzy?")==1)
+    return 2;
+    if (GiveHint("(8/10)  or plugh?")==1)
+    return 2;
+    if (GiveHint("(9/10)  or even plover?")==1)
+    return 2;
+    if (GiveHint("(10/10)  what about abracadbra?")==1)
+    return 2;
+    
+}
+];
+
+[ Scroller;
+  cred++;
+  switch(cred)
+  { 1: style bold;
+       center("Compiler and Main Library Files^");
+       rtrue;
+    2: style roman;
+       center("Graham Nelson^^");
+       rtrue;
+    3: style bold;
+       center("Additional Library Files^");
+       rtrue;
+    4: style roman;
+       center("L. Ross Raszewski^^");
+       rtrue;
+    5: style bold;
+       center("Competition Organizer^");
+       rtrue;
+    6: style roman;
+       center("Stephen Granade^^");
+       rtrue;
+    7: style bold;
+       center("Beta-Test Web-Page Organizer-People^");
+       rtrue;
+    8: style roman;
+       center("Lucian P. Smith^");
+       rtrue;
+    9: center("Liza Daly^^");
+       rtrue;
+    10: style bold;
+       center("People (or other entities) Whose Ideas Were Plagiarised^");
+       rtrue;
+    11: style roman;
+       center("Marc Blank^");
+       rtrue;
+    12: center("Dave Lebling^");
+        rtrue;
+    13: center("Brian Moriarty^");
+        rtrue;
+    14: center("George Lucas^");
+        rtrue;
+    15: center("Magnus Olsson^");
+        rtrue;
+    16: center("Francesco Bova^");
+        rtrue;
+    17: center("Steve Meretzky^");
+        rtrue;
+    18: center("J.R.R. Tolkien^");
+        rtrue;
+    19: center("The BBC^");
+        rtrue;
+    20: center("Willie Crowther^");
+        rtrue;
+    21: center("Don Woods^");
+        rtrue;
+    22: center("The Ancient Greeks (I think)^");
+        rtrue;
+    23: center("Activision^");
+        rtrue;
+    24: center("Luc French^");
+        rtrue;
+    25: center("Adam Cadre^");
+        rtrue;
+    26: center("J.R. Partington^^");
+        rtrue;
+    27: style bold;
+        center("Various Wibbly Ideas People^");
+        rtrue;
+    28: style roman;
+        center("My Mother^");
+        rtrue;
+    29: center("Andrew Plotkin^");
+        rtrue;
+    30: center("The Vast Majority of People Who Frequent ifMUD^");
+        rtrue;
+    31: center("Eric's parrot^^");
+        rtrue;
+    32: style bold;
+        center("The Beta Testers^");
+        rtrue;
+       
+    33: style roman;
+        center("Georg Wille^");
+        rtrue;
+    34: center("Iain Merrick^");
+        rtrue;
+    35: center("John Menichelli^");
+        rtrue;
+    36: center("Allen Garvin^");
+        rtrue;
+    37: center("Kevin Yao^");
+        rtrue;
+    38: center("Alex Hoffer^");
+        rtrue;
+    39: center("Graham Keellings^");
+        rtrue;
+    40: center("Tim Simmons^^");
+        rtrue;
+    41: style bold;
+        center("Post-Beta-Test Bug-Reporters and Idea-Givers^");
+        rtrue;
+    42: style roman;
+        center("Tomas Clark^");
+        rtrue;
+    43: center("James M. Power^");
+        rtrue;
+    44: center("Peter Polkinghorne^");
+        rtrue;
+    45: center("Marnie Parker^");
+        rtrue;
+    46: center("Duncan Cross^");
+        rtrue;
+    47: center("L. Ross Raszewski (again)^");
+        rtrue;
+    48: center("John McCall^");
+        rtrue;
+    49: center("John Cater^^");
+    50: style bold;
+        center("Various Other People Who I've Probably Forgotten^");
+        rtrue;
+    51: style roman;
+        center("I'm sorry. Really. Email me, and I shall most certainly put it right.");
+        rtrue;
+  }
+  !print (string) text;
+  !new_line;
+   
+];
+
+[ CreditsSub h i j a b c;
+  b = 0;
+  cred = 0;
+  @erase_window -1;
+  @split_window 4;
+  i = 0->33;
+  if (i==0) i=80;
+  @set_window 1;
+  @set_cursor 1 1;
+  style reverse;
+  spaces(i); j=i/2-4;
+  @set_cursor 1 j;
+  print "Credits";
+  style roman;
+  font on;
+  centeru("Without the following people, this game would never have been made.",2);
+  centeru("At least, it wouldn't be quite like this. So I would like to thank:",3);
+  @set_window 0;
+  print "^";
+  c = 10;
+  !a = 1;
+  !if (standard_interpreter > 0) a = 0;
+  while (b < 51)
+  { if (a == 0)
+    @read_char 1 c scroller a;
+    if (a ~= 0)
+    Scroller();
+    b++;
+  }
+  if (h == 1)
+  { do { @read_char 1 0 0 a;
+       }
+    until
+    (a==32 or 10 or 13);
+    @erase_window -1;
+  }
+  rtrue;
+];
+
+[ ChooseObjects obj code;
+  if (code<2)
+  { if (obj == grue1)
+    return 2;
+    if (obj in player && verb_word=='take')
+    return 2;
+    
+  }
+  if (obj == walls) return 8;
+  if (obj notin player) return 9;
+  if (obj in player) return 1; 
+  return 0;
+];
+
+[ PrintRank;
+  print ", earning you the rank of ";
+  style bold;
+  print "Spodgeville Murphy: ";
+  if (score < max_score) print (string) ranker;
+  else print "Rich Adventurer.";
+  style roman;
+  new_line;
+  rtrue;
+];
+
+[ PrintTaskName ach;
+  switch(ach)
+  {   0: "finding the entrance";
+      1: "discovering the elven sword";
+      2: "solving the complex riddle of the elven sword";
+      3: "killing the troll";
+      4: "running away from the giant rolling boulder";
+      5: "scraping the moss from the boulder";
+      6: "squeezing the moss";
+      7: "using the moss to clean the ancient picture chart";
+      8: "climbing the underground tower";
+      9: "meeting the Strange Underground Hermit";
+     10: "asking the Strange Underground Hermit various obscure questions";
+     11: "getting the Master Key from the Strange Underground Hermit";
+     12: "finding the underground river";
+     13: "finding the strange ring";
+     14: "hiding from the slimy grey creature";
+     15: "solving the slimy grey creature's first riddle";
+     16: "solving the slimy grey creature's second riddle";
+     17: "shooting the slimy grey creature";
+     18: "using the ring to get past the orcs";
+     19: "finding the white dragon";
+     20: "taking the coat";
+     21: "getting into the barrow";
+     22: "finding the black dragon";
+     23: "drowning the dragon with the glacier";
+     24: "finding the frozen princess";
+     25: "giving the coat to the princess";
+     26: "getting the unicorn key";
+     27: "finding various treasures";
+     28: "exorcising the demon from the senile wizard";
+     29: "freeing the demon";
+     30: "not being killed by the ungrateful wizard";
+     31: "not being killed by the ungrateful demon";
+     32: "shooting the wizard";
+     33: "taking the wizard's wand";
+     34: "stealing the scarf from the odd guy in the blue police box";
+     35: "using the wand to turn the locked door into fudge";
+     36: "eating the door";
+     37: "shooting the bear";
+     38: "feeding the bear to the ravenous gronkle";
+     39: "wearing the scarf in the ice room";
+     40: "shooting the vicious hellhound-poodle";
+     41: "unlocking the Master Door with the Master Key";
+     42: "unlocking the door to the royal treasury with the unicorn key";
+     43: "taking the royal treasure";
+     44: "finding the conveniently located supply of bullets";
+     45: "shooting the pirate";
+     46: "taking the pirate's treasure";
+     47: "shooting the thief";
+     48: "taking the thief's treasure";
+     49: "throwing most of your inventory onto the left bridge";
+     50: "crossing the right bridge";
+     51: "learning the complex strategy game";
+     52: "beating the Giant Flaming Head at the complex strategy game";
+     53: "not being killed by the annoyed Giant Flaming Head";
+     54: "shooting the annoyed Giant Flaming Head";
+     55: "taking the annoyed Giant Flaming Head's map to the Jewelled Eye of Wossname";
+     56: "shooting the three-headed dog";
+     57: "shooting the red dragon";
+     58: "shooting the three-dogged head";
+     59: "running from the trolls";
+     60: "shooting the three headed dogs";
+     61: "finding the Jewelled Eye of Wossname";
+     62: "taking the Jewelled Eye of Wossname";
+     63: "finding the corpse";
+     64: "taking the umbrella";
+     65: "surviving the cave-in";
+     66: "getting out of the cave";
+  }
+];
+
+[ ReadSub;
+  <<Examine noun>>;
+];
+[ ShoutSub;
+  "You shout at the top of your lungs, and the ceiling trembles slightly.";
+];
+
+[ ThinkAboutSub;
+  "You can't just think about any old thing you like, you know. Just
+   ~THINK~, and you will be presented with a list of topics you can
+   cope with.";
+];
+
+[ ThinkItSub;
+  DoMenu("What would you like to think about?^
+          ^     Stopping the Walls
+          ^     Surviving the Ceiling
+          ^     Escaping the Cave",
+          ThinkMenu, ThinkInfo);
+];
+
+[ ThinkMenu;
+  switch(menu_item)
+  { 0: item_width=15; item_name="Spodgeville Murphy's Thoughts";
+       return 3;
+    1: item_width=5; item_name="Stopping the Walls";
+    2: item_width=5; item_name="Surviving the Ceiling";
+    3: item_width=5; item_name="Escaping the Cave";
+  }
+       
+
+];
+
+
+
+[ ThinkInfo;
+  if (jewel notin player)
+  switch(random(8))
+  { 1: "Hmm, yeah, that might be a good idea.";
+    2: "OK, but how?";
+    3: "Why?";
+    4: "Hmm... Nah.";
+    5: "Yeah... No.";
+    6: "Eh?";
+    7: "What?";
+    8: "Hmm... I don't know...";
+
+  }
+
+  switch(menu_item)
+  { 1: print "(Press ENTER to return to menu, or C to continue.)^^";
+         if (GiveHint("(1/7) You need to jam the walls with something.")==1)
+         return 2;
+         if (GiveHint("(2/7) The rocks covering the floor apparently aren't enough...")==1)
+         return 2;
+         if (GiveHint("(3/7) ...so you need more rocks.")==1)
+         return 2;
+         if (GiveHint("(4/7) If you read the message displayed when the door slams
+                             shut, you might get a clue.")==1)
+         return 2;
+         if (GiveHint("(5/7) Examine the ceiling.")==1)
+         return 2;
+         if (GiveHint("(6/7) You need to make a loud noise, somehow.
+                             Shouting doesn't do it, but maybe something
+                             in your inventory will...")==1)
+         return 2;
+         if (GiveHint("(7/7) Shoot your gun.")==1)
+         return 2;
+    2: print "(Press ENTER to return to menu, or C to continue.)^^";
+       if (GiveHint("(1/7) You need to shield yourself from the falling
+                           rocks.")==1)
+       return 2;
+       if (GiveHint("(2/7) If you read the room description, you'll notice
+                           that there is apparently something dead in the
+                           room, but you can't see it.")==1)
+         return 2;
+         if (GiveHint("(3/7) So it must be hidden. ")==1)
+         return 2;
+         if (GiveHint("(4/7) Searching the rocks should reveal a corpse. Lovely, huh?")==1)
+         return 2;
+         if (GiveHint("(5/7) If you examine the corpse, you'll notice that
+                             it's holding an umbrella. Take it.")==1)
+         return 2;
+         if (GiveHint("(6/7) Examine the umbrella. Read the writing on the handle.")==1)
+         return 2;
+         if (GiveHint("(7/7) Open the umbrella. Stand under it.")==1)
+         return 2;
+
+       3: print "(Press ENTER to return to menu, or C to continue.)^^";
+          if (GiveHint("(1/7) When the ceiling falls down, a dim light fills the room.
+                              You might want to get a closer look.")==1)
+         return 2;
+         if (GiveHint("(2/7) Climb up onto the platform.")==1)
+         return 2;
+         if (GiveHint("(3/7) You're now very nearly out, but the exit is to far away.")==1)
+         return 2;
+         if (GiveHint("(4/7) Try examining the ledge.")==1)
+         return 2;
+         if (GiveHint("(5/7) The root is probably strong enough to hold your weight...")==1)
+         return 2;
+         if (GiveHint("(6/7) There's one important thing in your inventory (aside from
+                             the hat and the jacket) that you won't have used for
+                             any great purpose yet.")==1)
+         return 2;
+         if (GiveHint("(7/7) Whip the root.")==1)
+         return 2;
+
+           }
+
+];
+[ KickSub;
+  <<Attack noun>>;
+];
+[ CountSub;
+  "There appears to be one ", (name) noun,".";
+];
+[ HintsSub;
+  "There are hints in the game, but this isn't how you get to them.";
+];
+[ WossnameSub;
+  "Yeah, wossname, narmean, innit?";
+];
+[ CrackWhipSub;
+  if (whip in player)
+  "You crack the whip, just for fun.";
+  else
+  "You don't have that.";
+];
+
+
+Include "grammar";
+
+
+Verb "help" "instructions"    *                        -> Help;
+Verb "hints" "hint"           *                        -> Hints;
+Verb "whip"                   *                        -> CrackWhip
+                              * "whip"                 -> CrackWhip
+                              * "whip" "at" noun       -> WhipIt
+                              *  noun                  -> WhipIt
+                              * "at" noun              -> WhipIt
+                              * noun "with" "whip"     -> WhipIt;
+                              
+Extend "crack" first          * "whip"                 -> CrackWhip
+                              * "whip" "at" noun       -> WhipIt;
+Verb "wossname"               *                        -> Wossname;
+Verb "shoot"                  * noun                   -> shootatwith
+                              * noun "at" noun         -> shootwithat         
+                              * noun "with" noun       -> shootatwith      
+                              * "at" noun              -> shootat
+                              * "at" noun "with" noun  -> shootatwith; 
+Verb "fire"                   !* "at" "all"             -> shootall                      
+                              !* noun "at" "all"        -> shootall 
+                              !* "at" "all" "with" noun -> shootall 
+                              * "at" noun              -> shootat                      
+                              * noun "at" noun         -> shootwithat        
+                              * "at" noun "with" noun  -> shootatwith;
+Verb "kick"                   * noun                   -> kick;
+Verb "lift"                   * noun                   -> StandUnder;
+Verb "hide"                   * "under" noun           -> StandUnder;
+Verb "raise"                  * noun                   -> StandUnder;
+Verb "credits"                *                        -> Credits;
+Verb "count"                  * noun                   -> count;
+Verb "what" "who"             * "is"  scope=Topic      -> Query
+                              * "was" scope=Topic      -> Query;
+Verb "xyzzy" "plugh" "plover"
+     "abracadabra"            *                        -> Xyzzy;
+Verb "zork"                   *                        -> Zork; 
+Extend "shout" replace        *                        -> Shout
+                              * "at" noun              -> Shout;
+Verb "yell" "scream"          *                        -> Shout
+                              * "at" noun              -> Shout;
+Extend "think" replace        *                        -> ThinkIt
+                              * "about" topic          -> ThinkAbout;
+Extend "stand" first          * "under" noun           -> StandUnder;
+Extend "get"   first          * "under" noun           -> StandUnder
+                              * "beneath" noun         -> StandUnder
+                              * "underneath" noun      -> StandUnder;
+Extend "stand" first          * "under" noun           -> StandUnder
+                              * "beneath" noun         -> StandUnder
+                              * "underneath" noun      -> StandUnder;
+Extend "put" first            * noun "over" "head"     -> StandUnder
+                              * noun "above" "head"    -> StandUnder
+                              * noun "over" "me"       -> StandUnder
+                              * noun "above" "me"      -> StandUnder
+                              * "up" noun              -> StandUnder
+                              * "on" "me"              -> StandUnder;
+Extend "hold" first           * "up" noun              -> StandUnder
+                              * noun "over" "head"     -> StandUnder
+                              * noun "above" "head"    -> StandUnder
+                              * noun "over" "me"       -> StandUnder
+                              * noun "above" "me"      -> StandUnder
+                              * noun "up"              -> StandUnder;
+Extend "read" first           * noun                   -> Read;
+Extend "climb" first          * "on" noun              -> enter
+                              * "onto" noun            -> enter;
+!Extend "examine" first        * "all"                  -> xall;
